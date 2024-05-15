@@ -1,65 +1,63 @@
-import axios from "axios"
+import axios from "axios";
+
+const parseMember = (memberId: string, index: number) => {
+  const [canvasId, xywhString] = memberId.split("#xywh=");
+  const [x, y, w, h] = xywhString.split(",").map(Number);
+  const ulx = x;
+  const uly = y;
+  const lrx = x + w;
+  const lry = y + h;
+  const zoneId = String(index).padStart(8, "0");
+  const zone = `<zone xml:id="z-${zoneId}" ulx="${ulx}" uly="${uly}" lrx="${lrx}" lry="${lry}"/>`;
+
+  return { canvasId, zone };
+};
+
+const generateSurface = (canvasId: string, zones: string[]) => `
+  <surface source="${canvasId}">
+    ${zones.join("\n")}
+  </surface>
+`;
+
+const generateFacsimile = (manifest: string, surfaces: string[]) => `
+  <facsimile source="${manifest}">
+    ${surfaces.join("\n")}
+  </facsimile>
+`;
 
 const curation2tei = async (url: string) => {
-  let xml_string = ""
-  const {data} = await axios.get(url)
-  const selections = data.selections
+  const { data } = await axios.get(url);
+  const selections = data.selections;
 
-  let index = 0
+  let index = 0;
+  let xmlString = "";
 
-  for(const selection of selections){
+  for (const selection of selections) {
+    const manifest = selection.within["@id"].split("?")[0];
+    const members = selection.members;
 
-    let selection_string = ""
+    const zones: { [key: string]: string[] } = {};
+    const canvases: string[] = [];
 
-    const manifest = selection.within["@id"].split("?")[0]
+    for (const member of members) {
+      index += 1;
+      const { canvasId, zone } = parseMember(member["@id"], index);
 
-    const members = selection.members
-
-    const zones: any = {}
-    const canvases: any = []
-
-    for(const member of members) {
-      const member_id = member["@id"]
-      const spl = member_id.split("#xywh=")
-      const canvas_id = spl[0]
-
-      if(!canvases.includes(canvas_id)){
-        canvases.push(canvas_id)
-        zones[canvas_id] = []
+      if (!canvases.includes(canvasId)) {
+        canvases.push(canvasId);
+        zones[canvasId] = [];
       }
 
-      const xywh = spl[1].split(",")
-      const x = Number(xywh[0])
-      const y = Number(xywh[1])
-      const w = Number(xywh[2])
-      const h = Number(xywh[3])
-      const ulx = x
-      const uly = y
-      const lrx = x + w
-      const lry = y + h
-
-      index += 1
-
-      const zone_id = String(index).padStart(8, "0")
-
-      const zone = `<zone xml:id="z-${zone_id}" ulx="${ulx}" uly="${uly}" lrx="${lrx}" lry="${lry}"/>`
-
-      zones[canvas_id].push(zone)
+      zones[canvasId].push(zone);
     }
 
-    for(const canvas_id of canvases) {
-      selection_string += `<surface source="${canvas_id}">
-      ${zones[canvas_id].join('\n')}
-      </surface>`
-    }
-
-    selection_string = `<facsimile source="${manifest}">
-    ${selection_string}
-    </facsimile>`
-    xml_string += selection_string
+    const surfaces = canvases.map((canvasId) =>
+      generateSurface(canvasId, zones[canvasId])
+    );
+    xmlString += generateFacsimile(manifest, surfaces);
   }
 
-  return xml_string
-}
+  return xmlString;
+};
 
-export { curation2tei }
+export { curation2tei };
