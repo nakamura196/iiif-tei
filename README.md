@@ -1,6 +1,6 @@
 # iiif-tei-js
 
-This is a JavaScript library for working with TEI documents in IIIF contexts. It is designed to work with the [IIIF Presentation API](https://iiif.io/api/presentation/3.0/) and the [IIIF Search API](https://iiif.io/api/search/1.0/).
+This is a JavaScript library for working with TEI documents in IIIF contexts. It is designed to work with the [IIIF Curation API](http://codh.rois.ac.jp/iiif/curation/).
 
 ## Installation
 
@@ -13,3 +13,7 @@ npm install -g ts-node
 ```bash
 ts-node src/demo.ts
 ```
+
+## License
+
+This repository is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
